@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Class Group Generator</title>
+    <style>
+        :root { --primary: #2ea44f; --danger: #d73a49; --bg: #f6f8fa; }
+        body { font-family: -apple-system, sans-serif; padding: 15px; background-color: var(--bg); color: #24292e; line-height: 1.5; }
+        .card { background: white; border: 1px solid #d1d5da; border-radius: 8px; padding: 20px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { font-size: 1.5rem; margin-top: 0; text-align: center; }
+        p { font-size: 0.9rem; color: #586069; }
+        textarea { width: 100%; height: 180px; padding: 12px; border: 1px solid #d1d5da; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
+        .input-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; font-weight: bold; }
+        input[type="number"] { width: 60px; padding: 8px; border-radius: 6px; border: 1px solid #d1d5da; }
+        button { width: 100%; padding: 12px; font-size: 16px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; margin-bottom: 10px; transition: opacity 0.2s; }
+        .btn-main { background-color: var(--primary); color: white; }
+        .btn-sec { background-color: #f3f4f6; color: var(--danger); border: 1px solid rgba(27,31,35,0.15); }
+        .results-container { margin-top: 20px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .group-card { background: #fff; border-left: 5px solid var(--primary); padding: 12px; border-radius: 4px; border-top: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee; }
+        .group-name { font-weight: bold; color: #0366d6; margin-bottom: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Classroom Groupings</h1>
+    <p>Format: <b>Name, Rank</b> (e.g. <i>John, 1</i>)<br>Separate each student by a new line.</p>
+    
+    <textarea id="studentData" placeholder="Michael, 1&#10;Sarah, 2&#10;David, 1&#10;Jessica, 3" oninput="saveData()"></textarea>
+
+    <div class="input-group">
+        <span>Desired Number of Groups:</span>
+        <input type="number" id="numGroups" value="3" min="1">
+    </div>
+
+    <button class="btn-main" onclick="makeGroups()">Generate Balanced Teams</button>
+    <button class="btn-sec" onclick="clearAll()">Clear Everything</button>
+
+    <div id="displayArea" class="results-container"></div>
+</div>
+
+<script>
+    // Load saved names automatically when page opens
+    window.onload = () => {
+        const saved = localStorage.getItem('classData');
+        if (saved) document.getElementById('studentData').value = saved;
+    };
+
+    function saveData() {
+        localStorage.setItem('classData', document.getElementById('studentData').value);
+    }
+
+    function clearAll() {
+        if(confirm("Delete all names?")) {
+            document.getElementById('studentData').value = "";
+            document.getElementById('displayArea').innerHTML = "";
+            localStorage.removeItem('classData');
+        }
+    }
+
+    function makeGroups() {
+        const text = document.getElementById('studentData').value;
+        const groupCount = parseInt(document.getElementById('numGroups').value);
+        const lines = text.split('\n').filter(l => l.trim() !== "");
+
+        if (lines.length < groupCount) {
+            alert("Add more students or reduce the number of groups!");
+            return;
+        }
+
+        // 1. Parse Data
+        let students = lines.map(line => {
+            const parts = line.split(',');
+            return { 
+                name: parts[0] ? parts[0].trim() : "Unknown", 
+                rank: parseInt(parts[1]) || 2 
+            };
+        });
+
+        // 2. Sort by Rank (Balanced distribution)
+        students.sort((a, b) => a.rank - b.rank);
+
+        // 3. Create Empty Groups
+        let groups = Array.from({ length: groupCount }, () => []);
+
+        // 4. Distribute using "Snake" pattern to keep ranks even
+        students.forEach((s, i) => {
+            groups[i % groupCount].push(s.name);
+        });
+
+        // 5. Render
+        const area = document.getElementById('displayArea');
+        area.innerHTML = "";
+        groups.forEach((g, i) => {
+            area.innerHTML += `
+                <div class="group-card">
+                    <span class="group-name">Team ${i + 1} (${g.length} Students)</span>
+                    <div>${g.join(' • ')}</div>
+                </div>`;
+        });
+    }
+</script>
+
+</body>
+</html>
